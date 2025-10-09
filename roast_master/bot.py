@@ -1,7 +1,15 @@
 import discord, asyncio, json, random
 from discord.ext import commands
-from .data_manager import DataManager
-from .ai_engine import generate_roast
+
+# Try relative imports first (when in package), then absolute
+try:
+    from .data_manager import DataManager
+    from .ai_engine import generate_roast
+    from .history_fetcher import HistoryFetcher
+except ImportError:
+    from data_manager import DataManager
+    from ai_engine import generate_roast
+    from history_fetcher import HistoryFetcher
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -11,6 +19,7 @@ intents.members = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 data_manager = DataManager("data/messages.json")
+history_fetcher = HistoryFetcher(bot, data_manager)
 
 # Cooldown tracker to prevent spam
 roast_cooldowns = {}
@@ -19,6 +28,25 @@ roast_cooldowns = {}
 async def on_ready():
     print(f"✅ Logged in as {bot.user}")
     print(f"📊 Loaded {len(data_manager.data)} users with message history")
+    print(f"📋 Commands registered: {', '.join([cmd.name for cmd in bot.commands])}")
+    print(f"🏠 Connected to {len(bot.guilds)} server(s)")
+    print("🔥 Bot is ready to roast!")
+
+@bot.event
+async def on_command_error(ctx, error):
+    """Handle command errors gracefully"""
+    if isinstance(error, commands.CommandNotFound):
+        # Silently ignore command not found errors
+        pass
+    elif isinstance(error, commands.MissingPermissions):
+        await ctx.send("❌ You need Administrator permissions to use this command!")
+    elif isinstance(error, commands.MissingRequiredArgument):
+        await ctx.send(f"❌ Missing required argument. Use `!help {ctx.command}` for usage info.")
+    elif isinstance(error, commands.BadArgument):
+        await ctx.send("❌ Invalid argument. Make sure you're mentioning users with @username")
+    else:
+        print(f"❌ Error in command '{ctx.command}': {error}")
+        await ctx.send(f"❌ An error occurred: {error}")
 
 @bot.event
 async def on_message(message):
@@ -154,6 +182,138 @@ async def battle(ctx, member1: discord.Member, member2: discord.Member):
         message = await ctx.channel.fetch_message(ctx.channel.last_message_id)
         await message.add_reaction("1️⃣")
         await message.add_reaction("2️⃣")
+
+@bot.command()
+@commands.has_permissions(administrator=True)
+async def index(ctx, days: int = 30):
+    """
+    [ADMIN ONLY] Index chat history from this channel
+    Usage: !index [days] - defaults to 30 days
+    """
+    if days > 365:
+        await ctx.send("⚠️ Maximum 365 days allowed!")
+        return
+    
+    status_msg = await ctx.send(f"📚 Starting to index last {days} days of chat history in #{ctx.channel.name}...")
+    
+    result = await history_fetcher.index_channel_history(ctx.channel, days)
+    
+    if result["success"]:
+        top_users = "\n".join([f"  • {name}: {count} messages" for name, count in result["top_users"]])
+        await status_msg.edit(content=
+            f"✅ **Indexing Complete!**\n"
+            f"📊 Indexed {result['message_count']} messages from {result['user_count']} users\n\n"
+            f"🏆 **Top Contributors:**\n{top_users}"
+        )
+    else:
+        await status_msg.edit(content=f"❌ Failed to index: {result.get('error', 'Unknown error')}")
+
+@bot.command()
+@commands.has_permissions(administrator=True)
+async def indexserver(ctx, days: int = 30):
+    """
+    [ADMIN ONLY] Index entire server's chat history
+    Usage: !indexserver [days] - defaults to 30 days
+    WARNING: This may take a while!
+    """
+    if days > 365:
+        await ctx.send("⚠️ Maximum 365 days allowed!")
+        return
+    
+    status_msg = await ctx.send(f"🏰 Starting server-wide index for last {days} days...\nThis may take several minutes!")
+    
+    async def progress_update(message):
+        try:
+            await status_msg.edit(content=f"📚 {message}")
+        except:
+            pass
+    
+    result = await history_fetcher.index_server_history(ctx.guild, days, progress_update)
+    
+    failed_text = ""
+    if result["failed_channels"]:
+        failed_text = f"\n⚠️ Couldn't access: {', '.join(result['failed_channels'][:5])}"
+    
+    await status_msg.edit(content=
+        f"✅ **Server Index Complete!**\n"
+        f"📊 Indexed {result['total_messages']} messages\n"
+        f"📝 From {result['successful_channels']}/{result['total_channels']} channels"
+        f"{failed_text}"
+    )
+
+@bot.command()
+@commands.has_permissions(administrator=True)
+async def deepdive(ctx, member: discord.Member, days: int = 90):
+    """
+    [ADMIN ONLY] Deep dive into a user's history across all channels
+    Usage: !deepdive @user [days] - defaults to 90 days
+    """
+    if days > 365:
+        await ctx.send("⚠️ Maximum 365 days allowed!")
+        return
+    
+    status_msg = await ctx.send(f"🔍 Deep-diving into {member.display_name}'s history...")
+    
+    count = await history_fetcher.fetch_user_deep_history(ctx.guild, member, days)
+    
+    await status_msg.edit(content=
+        f"✅ **Deep Dive Complete!**\n"
+        f"Found {count} messages from {member.display_name} across all channels"
+    )
+
+@bot.command()
+async def embarrass(ctx, member: discord.Member):
+    """
+    Find and roast someone based on their most embarrassing messages
+    Usage: !embarrass @user
+    """
+    if member.bot:
+        await ctx.send("🤖 Bots don't get embarrassed!")
+        return
+    
+    async with ctx.typing():
+        # Find embarrassing moments
+        embarrassing = await history_fetcher.find_embarrassing_moments(member.id)
+        
+        if not embarrassing:
+            await ctx.send(f"🤔 Couldn't find anything embarrassing from {member.mention}... yet.")
+            return
+        
+        # Create a special roast using embarrassing context
+        user_data = data_manager.get_user_data(member.id)
+        
+        # Add embarrassing messages to the roast context
+        user_data["embarrassing_context"] = embarrassing[:3]  # Top 3 most embarrassing
+        
+        roast_text = await generate_roast(member.display_name, user_data)
+        
+        await ctx.send(f"😬 {member.mention}\n{roast_text}")
+
+@bot.command()
+async def memory(ctx, member: discord.Member = None):
+    """
+    Show how much chat history the bot has stored
+    Usage: !memory [@user] - shows your own or another user's stored message count
+    """
+    if member is None:
+        member = ctx.author
+    
+    user_data = data_manager.get_user_data(member.id)
+    msg_count = len(user_data.get("messages", []))
+    total_count = user_data.get("total_messages", msg_count)
+    
+    first_seen = user_data.get("first_seen", "Unknown")
+    if first_seen != "Unknown":
+        from datetime import datetime
+        first_date = datetime.fromisoformat(first_seen).strftime("%Y-%m-%d")
+        first_seen = first_date
+    
+    await ctx.send(
+        f"🧠 **Memory Stats for {member.display_name}:**\n"
+        f"💾 Currently stored: {msg_count} messages\n"
+        f"📊 Total seen: {total_count} messages\n"
+        f"📅 First seen: {first_seen}"
+    )
 
 def run_bot():
     with open("data/config.json") as f:

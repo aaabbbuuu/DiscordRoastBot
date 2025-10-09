@@ -64,7 +64,20 @@ async def generate_roast(user_name: str, user_data: dict) -> str:
     """
     
     messages = user_data.get("messages", [])
-    recent_msgs = " ".join(messages[-20:])  # Last 20 messages
+    embarrassing = user_data.get("embarrassing_context", [])
+    
+    # Get a varied sample of messages (mix of old and new)
+    if len(messages) > 50:
+        import random
+        recent = messages[-20:]
+        older = messages[:-20]
+        sample_size = min(30, len(older))
+        older_sample = random.sample(older, sample_size) if older else []
+        sample_messages = older_sample + recent
+    else:
+        sample_messages = messages
+    
+    recent_msgs = " ".join(sample_messages)
     
     # ✅ ENHANCEMENT: Handle users with no message history
     if not recent_msgs.strip():
@@ -79,7 +92,7 @@ Make it punchy and funny. No need to explain they have no history - just roast t
 """
     else:
         # ✅ ENHANCEMENT: Add chat pattern analysis for better roasts
-        analysis = analyze_chat_patterns(messages)
+        analysis = analyze_chat_patterns(sample_messages)
         
         # Build context hints for the AI
         context_hints = []
@@ -96,17 +109,24 @@ Make it punchy and funny. No need to explain they have no history - just roast t
         
         hints_text = f"Behavioral patterns: {', '.join(context_hints)}. " if context_hints else ""
         
+        # Add embarrassing context if available
+        embarrassing_text = ""
+        if embarrassing:
+            embarrassing_text = f"\nSome embarrassing things they said: {' | '.join(embarrassing[:3])}\n"
+        
         prompt = f"""
 You are DankRoastMaster 3000 – a ruthless AI comedian who roasts people based on what they actually say.
 
 Target: {user_name}
 {hints_text}
-Recent chat history: "{recent_msgs}"
+Chat history sample (mix of old and recent): "{recent_msgs}"
+{embarrassing_text}
 
 Write a SHORT (1-2 sentences max), savage roast that:
 1. References something specific they said or how they communicate
 2. Is funny but cuts deep
 3. Feels personal and contextual
+{f"4. BONUS: Reference their embarrassing moments if possible" if embarrassing else ""}
 
 Don't just describe them - ROAST them based on their actual words and patterns.
 """

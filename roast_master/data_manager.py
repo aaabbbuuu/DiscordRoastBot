@@ -12,9 +12,14 @@ class DataManager:
         with open(path, "r") as f:
             self.data = json.load(f)
 
-    def add_message(self, user_id, msg):
+    def add_message(self, user_id, msg, skip_save=False):
         """
         Add a message to user's history with timestamp
+        
+        Args:
+            user_id: User's Discord ID
+            msg: Message content
+            skip_save: If True, don't save immediately (useful for bulk operations)
         """
         user_id = str(user_id)
         
@@ -31,11 +36,12 @@ class DataManager:
         self.data[user_id]["total_messages"] = self.data[user_id].get("total_messages", 0) + 1
         self.data[user_id]["last_seen"] = datetime.now().isoformat()
         
-        # Keep only last 200 messages to prevent file bloat
-        if len(self.data[user_id]["messages"]) > 200:
-            self.data[user_id]["messages"] = self.data[user_id]["messages"][-200:]
+        # Keep only last 500 messages for deep history (increased from 200)
+        if len(self.data[user_id]["messages"]) > 500:
+            self.data[user_id]["messages"] = self.data[user_id]["messages"][-500:]
         
-        self._save()
+        if not skip_save:
+            self._save()
 
     def get_user_data(self, user_id):
         """
