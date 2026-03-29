@@ -181,8 +181,8 @@ class AIEngine:
                 logger.debug("Trying provider %s …", provider.name)
                 result = await provider.generate(
                     prompt=prompt,
-                    max_tokens=80,
-                    temperature=0.95,
+                    max_tokens=200,
+                    temperature=1.0,
                 )
                 if result is not None:
                     logger.info("Generated text via %s.", provider.name)

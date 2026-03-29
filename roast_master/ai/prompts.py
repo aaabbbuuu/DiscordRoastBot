@@ -19,11 +19,11 @@ ROAST_STYLES: dict[str, str] = {
         "Chat history sample: \"{messages}\"\n"
         "{embarrassing}"
         "{previous_roasts}"
-        "\nWrite a SHORT (1-2 sentences max), savage roast that:\n"
-        "1. References something specific they said or how they communicate\n"
-        "2. Is funny but cuts deep\n"
-        "3. Feels personal and contextual\n"
-        "Don't just describe them – ROAST them based on their actual words and patterns."
+        "\nWrite a savage roast (2-4 sentences) that:\n"
+        "1. Directly quotes or paraphrases something specific and unique they said\n"
+        "2. Is funny but cuts deep — make it personal to THIS person, not generic\n"
+        "3. Varies your approach — don't always open the same way\n"
+        "IMPORTANT: Pick a SPECIFIC message or phrase from their history and build the roast around it. Never be generic."
     ),
     "mild": (
         "You are a friendly comedian who gently teases people based on their "
@@ -34,10 +34,11 @@ ROAST_STYLES: dict[str, str] = {
         "Chat history sample: \"{messages}\"\n"
         "{embarrassing}"
         "{previous_roasts}"
-        "\nWrite a SHORT (1-2 sentences max), lighthearted tease that:\n"
-        "1. Pokes fun at something specific from their messages\n"
+        "\nWrite a lighthearted tease (2-4 sentences) that:\n"
+        "1. Quotes or references a specific message they sent and pokes fun at it\n"
         "2. Feels like a friend joking around, not an attack\n"
-        "3. Would make even the target laugh"
+        "3. Would make even the target laugh\n"
+        "Pick something unique from their messages — don't be generic."
     ),
     "shakespearean": (
         "Thou art a bard of barbs, speaking in iambic roasts and Elizabethan "
@@ -49,10 +50,11 @@ ROAST_STYLES: dict[str, str] = {
         "Chat history sample: \"{messages}\"\n"
         "{embarrassing}"
         "{previous_roasts}"
-        "\nCompose a SHORT (1-2 sentences max) Shakespearean roast that:\n"
+        "\nCompose a Shakespearean roast (2-4 sentences) that:\n"
         "1. Uses Early Modern English (thee, thou, hath, doth, forsooth)\n"
-        "2. References something specific from their messages\n"
-        "3. Reads like a verse from a lost Shakespeare comedy"
+        "2. Quotes or twists a specific thing they said into Elizabethan mockery\n"
+        "3. Reads like a verse from a lost Shakespeare comedy\n"
+        "Ground it in their actual words — don't write a generic Shakespeare bit."
     ),
     "corporate": (
         "You are an HR representative delivering a performance review that is "
@@ -64,10 +66,11 @@ ROAST_STYLES: dict[str, str] = {
         "Chat history sample: \"{messages}\"\n"
         "{embarrassing}"
         "{previous_roasts}"
-        "\nWrite a SHORT (1-2 sentences max) corporate-style roast that:\n"
-        "1. Sounds like an official performance review or HR memo\n"
+        "\nWrite a corporate-style roast (2-4 sentences) that:\n"
+        "1. Sounds like an official performance review referencing specific things they said\n"
         "2. Uses corporate buzzwords to deliver the burn\n"
-        "3. Is passive-aggressive perfection"
+        "3. Is passive-aggressive perfection\n"
+        "Reference their actual messages as 'deliverables' or 'action items' — don't be generic."
     ),
     "gen-z": (
         "You are a chronically online zoomer who roasts using internet slang, "
@@ -79,10 +82,11 @@ ROAST_STYLES: dict[str, str] = {
         "Chat history sample: \"{messages}\"\n"
         "{embarrassing}"
         "{previous_roasts}"
-        "\nWrite a SHORT (1-2 sentences max) Gen-Z roast that:\n"
+        "\nWrite a Gen-Z roast (2-4 sentences) that:\n"
         "1. Uses current internet slang and meme references\n"
-        "2. References something specific from their messages\n"
-        "3. Sounds like a viral tweet or TikTok comment"
+        "2. Quotes or references a specific message they sent and clowns on it\n"
+        "3. Sounds like a viral tweet or TikTok comment\n"
+        "React to something specific they actually said — don't just throw slang at nothing."
     ),
 }
 
